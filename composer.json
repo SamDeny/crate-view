@@ -1,0 +1,40 @@
+{
+    "name": "crate/view",
+    "type": "crate-module",
+    "version": "0.1.0",
+    "description": "The basic view module for the Crate CMS, providing an Assets and TWIG templating handler.",
+    "keywords": [
+        "crate",
+        "view",
+        "templating",
+        "assets",
+        "twig",
+        "module",
+        "cms"
+    ],
+    "homepage": "https://crate.md/module/@crate/view",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "rat.md",
+            "email": "info@crate.md",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.0.0",
+        "crate/core": "^0.1.0",
+        "twig/twig": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Crate\\View\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}
