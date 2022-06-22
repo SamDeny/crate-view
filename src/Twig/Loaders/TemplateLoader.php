@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Crate\View\Twig;
+namespace Crate\View\Twig\Loaders;
 
 use Citrus\Framework\Application;
 use Crate\Core\Modules\ModuleRegistry;

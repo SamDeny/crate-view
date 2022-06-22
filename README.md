@@ -3,6 +3,13 @@
 
 *Work in Progress*
 
+
+Features
+--------
+
+- Stack Blocks (Modified, Forked version of filhocodes' [Twig Stack Extension](https://github.com/filhocodes/twig-stack-extension))
+
+
 Provided TWIG Extensions
 ------------------------
 

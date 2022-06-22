@@ -1,25 +1,52 @@
 <?php declare(strict_types=1);
 
-namespace Crate\View\Twig\TokenParser;
+namespace Crate\View\Twig\Extensions\TokenParser;
 
-use Crate\Backend\View\Twig\Nodes\StackReferenceNode;
+use Crate\View\Twig\Extensions\Nodes\StackItemNode;
 use Twig\Error\SyntaxError;
-use Twig\Node\BlockNode;
 use Twig\Node\Node;
 use Twig\Node\PrintNode;
 use Twig\Token;
 use Twig\TokenParser\AbstractTokenParser;
 
-class StackTokenParser extends AbstractTokenParser
+class StackItemTokenParser extends AbstractTokenParser
 {
 
     /**
-     * Stacks
+     * Used Token tag
      *
-     * @var array
+     * @var string
      */
-    protected array $stacks = [];
-    
+    protected string $tag;
+
+    /**
+     * Stack token mode
+     *
+     * @var string
+     */
+    protected string $mode;
+
+    /**
+     * Stack token once
+     *
+     * @var boolean
+     */
+    protected bool $once;
+
+    /**
+     * Create a new StackItemTokenParser
+     *
+     * @param string $tag The desired tag name.
+     * @param string $mode The desired tag mode (append or prepend).
+     * @param boolean $once Switch if tag can only be added once.
+     */
+    public function __construct(string $tag, string $mode = 'append', bool $once = false)
+    {
+        $this->tag = strtolower($tag);
+        $this->mode = $mode === 'prepend'? 'prepend': 'append';
+        $this->once = $once;
+    }
+
     /**
      * Parse Token
      *
@@ -31,22 +58,8 @@ class StackTokenParser extends AbstractTokenParser
         $lineno = $token->getLine();
         $stream = $this->parser->getStream();
         $name = $stream->expect(Token::NAME_TYPE)->getValue();
-        $stack = 'stack_' . $name;
-
-        // Check if StackBlock does already exist.
-        if (array_key_exists($stack, $this->stacks)) {
-            throw new SyntaxError(
-                sprintf("The stack '%s' has already been defined on line %d.", $name, $this->stacks[$stack]), 
-                $stream->getCurrent()->getLine(), 
-                $stream->getSourceContext()
-            );
-        }
-        $this->stacks[$stack] = $lineno;
-        $this->parser->setBlock($stack, $block = new BlockNode($stack, new Node([]), $lineno));
         $this->parser->pushLocalScope();
-        $this->parser->pushBlockStack($stack);
 
-        // Read
         if ($stream->nextIf(Token::BLOCK_END_TYPE)) {
             $body = $this->parser->subparse([$this, 'decideStackEnd'], true);
             if ($token = $stream->nextIf(Token::NAME_TYPE)) {
@@ -54,8 +67,8 @@ class StackTokenParser extends AbstractTokenParser
 
                 if ($value != $name) {
                     throw new SyntaxError(
-                        sprintf('Expected endblock for stack "%s" (but "%s" given).', $name, $value), 
-                        $stream->getCurrent()->getLine(), 
+                        sprintf("Expected end$this->tag for stack '$name', but got %s", $value),
+                        $stream->getCurrent()->getLine(),
                         $stream->getSourceContext()
                     );
                 }
@@ -65,13 +78,10 @@ class StackTokenParser extends AbstractTokenParser
                 new PrintNode($this->parser->getExpressionParser()->parseExpression(), $lineno),
             ]);
         }
+        $this->parser->popLocalScope();
         $stream->expect(Token::BLOCK_END_TYPE);
 
-        // Set Data
-        $block->setNode('body', $body);
-        $this->parser->popBlockStack();
-        $this->parser->popLocalScope();
-        return new StackReferenceNode($stack, $lineno, $this->getTag());
+        return new StackItemNode($body, $name, $this->mode, $this->once, $lineno);
     }
 
     /**
@@ -82,7 +92,7 @@ class StackTokenParser extends AbstractTokenParser
      */
     public function decideStackEnd(Token $token): bool
     {
-        return $token->test('endstack');
+        return $token->test('end' . $this->tag);
     }
 
     /**
@@ -92,7 +102,7 @@ class StackTokenParser extends AbstractTokenParser
      */
     public function getTag()
     {
-        return 'stack';
+        return $this->tag;
     }
 
 }

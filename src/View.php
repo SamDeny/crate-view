@@ -1,11 +1,11 @@
 <?php declare(strict_types=1);
 
-namespace Crate\View\View;
+namespace Crate\View;
 
 use Citrus\Framework\Application;
-use Crate\Backend\View\Twig\BackendExtension;
-use Crate\Backend\View\Twig\StackExtension;
-use Crate\Backend\View\Twig\TemplateLoader;
+use Crate\View\Twig\Extensions\CrateExtension;
+use Crate\View\Twig\Extensions\StackExtension;
+use Crate\View\Twig\Loaders\TemplateLoader;
 use Twig\Environment;
 
 class View
@@ -26,6 +26,13 @@ class View
     protected Environment $twig;
 
     /**
+     * Global Template values
+     *
+     * @var array
+     */
+    protected array $globals;
+
+    /**
      * Create a new View instance.
      *
      * @param Application $citrus
@@ -34,11 +41,12 @@ class View
     public function __construct(Application $citrus, TemplateLoader $loader)
     {
         $this->app = $citrus;
+        $this->globals = [];
 
         // Create Twig Environment
         $this->twig = new Environment($loader, [
             'auto_reload'       => true,
-            //'cache'             => path(':cache/views'),
+            'cache'             => path(':cache/views'),
             'debug'             => !$citrus->configurator->isProduction(),
             'strict_variables'  => true
         ]);
@@ -48,9 +56,45 @@ class View
             $this->twig->addExtension(new \Twig\Extension\DebugExtension);
         }
 
+        // Add Intl Extension
+        $this->twig->addExtension(new \Twig\Extra\Intl\IntlExtension);
+
         // Add Crate/Backend Extensions
-        $this->twig->addExtension(new BackendExtension);
+        $this->twig->addExtension(new CrateExtension);
         $this->twig->addExtension(new StackExtension);
+    }
+
+    /**
+     * Get TWIG Environment
+     *
+     * @return Environment
+     */
+    public function getTwigEnvironment(): Environment
+    {
+        return $this->twig;
+    }
+
+    /**
+     * Add Global Value
+     *
+     * @param string $key
+     * @param mixed $value
+     * @return void
+     */
+    public function addGlobal(string $key, mixed $value): void
+    {
+        $this->globals[$key] = $value;
+    }
+
+    /**
+     * Add Global Values
+     *
+     * @param array $globals
+     * @return void
+     */
+    public function addGlobals(array $globals): void
+    {
+        $this->globals = array_merge($this->globals, $globals);
     }
 
     /**
@@ -62,7 +106,7 @@ class View
      */
     public function render(string $template, array $context = []): string
     {
-        return $this->twig->render($template, $context);
+        return $this->twig->render($template, array_merge($this->globals, $context));
     }
 
 }
